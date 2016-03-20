@@ -26,13 +26,19 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'com.github.bumptech.glide:glide:3.5.2'
+
     compile "com.android.support:support-annotations:$verSupport"
     compile "com.android.support:gridlayout-v7:$verSupport"
     compile "com.android.support:cardview-v7:$verSupport"
     compile "com.android.support:appcompat-v7:$verSupport"
     compile "com.android.support:design:$verSupport"
     compile "com.android.support:recyclerview-v7:$verSupport"
+
     compile 'com.google.android.apps.muzei:muzei-api:2.0'
+
     compile "com.google.android.gms:play-services-gcm:$verPlayServices"
     compile "com.google.android.gms:play-services-location:$verPlayServices"
+    compile "com.google.android.gms:play-services-wearable:$verPlayServices"
+
+    wearApp project(':wearable')
 }

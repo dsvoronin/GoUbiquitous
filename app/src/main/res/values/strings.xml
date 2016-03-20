@@ -236,4 +236,6 @@
     <!-- For Google Places API Attributions -->
     <string name="attribution_text">Powered by Google</string>
 
+    <string name="google_app_id">701681784773</string>
+
 </resources>
