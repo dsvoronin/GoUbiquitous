@@ -23,10 +23,6 @@ android {
     }
 }
 
-ext{
-    verSupport = '23.2.1'
-}
-
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'com.github.bumptech.glide:glide:3.5.2'
@@ -37,6 +33,6 @@ dependencies {
     compile "com.android.support:design:$verSupport"
     compile "com.android.support:recyclerview-v7:$verSupport"
     compile 'com.google.android.apps.muzei:muzei-api:2.0'
-    compile 'com.google.android.gms:play-services-gcm:8.4.0'
-    compile 'com.google.android.gms:play-services-location:8.4.0'
+    compile "com.google.android.gms:play-services-gcm:$verPlayServices"
+    compile "com.google.android.gms:play-services-location:$verPlayServices"
 }
