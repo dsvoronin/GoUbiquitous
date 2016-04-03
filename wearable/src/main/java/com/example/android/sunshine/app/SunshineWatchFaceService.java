@@ -26,7 +26,6 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
-import android.nfc.Tag;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -93,8 +92,8 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
     private class Engine extends CanvasWatchFaceService.Engine {
         final Handler mUpdateTimeHandler = new EngineHandler(this);
         boolean mRegisteredTimeZoneReceiver = false;
-        Paint mBackgroundPaint;
-        Paint mTextPaint;
+        Paint bgPaint;
+        Paint timePaint;
         Paint datePaint;
         Paint tempPaint;
         boolean mAmbient;
@@ -135,6 +134,9 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
         float lineWidth;
         float lineYOffset;
 
+        int defaultMargin;
+        int centerLineOffset;
+
         DateFormat format = new SimpleDateFormat("EEE, MMM dd yyyy");
 
         /**
@@ -168,11 +170,11 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             lineWidth = resources.getDimension(R.dimen.line_width);
             lineYOffset = resources.getDimension(R.dimen.line_y_offset);
 
-            mBackgroundPaint = new Paint();
-            mBackgroundPaint.setColor(resources.getColor(R.color.background));
+            bgPaint = new Paint();
+            bgPaint.setColor(resources.getColor(R.color.background));
 
-            mTextPaint = new Paint();
-            mTextPaint = createTextPaint(resources.getColor(R.color.digital_text));
+            timePaint = new Paint();
+            timePaint = createTextPaint(resources.getColor(R.color.digital_text));
 
             datePaint = createTextPaint(resources.getColor(R.color.digital_text_light));
 
@@ -245,12 +247,15 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             float textSize = resources.getDimension(isRound
                     ? R.dimen.digital_text_size_round : R.dimen.digital_text_size);
 
-            mTextPaint.setTextSize(textSize);
+            timePaint.setTextSize(textSize);
 
             datePaint.setTextSize(resources.getDimension(isRound ? R.dimen.date_text_size_round : R.dimen.date_text_size));
             dateXOffset = resources.getDimension(isRound ? R.dimen.date_x_offset_round : R.dimen.date_x_offset);
 
             tempXOffset = resources.getDimension(isRound ? R.dimen.temp_x_offset_round : R.dimen.temp_x_offset);
+
+            defaultMargin = (int) resources.getDimension(isRound ? R.dimen.default_margin : R.dimen.default_margin);
+            centerLineOffset = (int) resources.getDimension(isRound ? R.dimen.center_line_offset : R.dimen.center_line_offset);
 
             tempPaint.setTextSize(resources.getDimension(isRound ? R.dimen.temp_text_size_round : R.dimen.temp_text_size));
         }
@@ -273,7 +278,7 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             if (mAmbient != inAmbientMode) {
                 mAmbient = inAmbientMode;
                 if (mLowBitAmbient) {
-                    mTextPaint.setAntiAlias(!inAmbientMode);
+                    timePaint.setAntiAlias(!inAmbientMode);
                 }
                 invalidate();
             }
@@ -285,27 +290,71 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
 
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
-            // Draw the background.
-            if (isInAmbientMode()) {
-                canvas.drawColor(Color.BLACK);
-            } else {
-                canvas.drawRect(0, 0, bounds.width(), bounds.height(), mBackgroundPaint);
-            }
+            drawBackground(canvas, bounds);
+
+            int lineY = drawLine(canvas, bounds);
 
             calendar.setTimeInMillis(System.currentTimeMillis());
 
-            String time = String.format("%d:%02d", calendar.get(Calendar.HOUR), calendar.get(Calendar.MINUTE));
-            canvas.drawText(time, bounds.centerX(), mYOffset, mTextPaint);
+            int dateYTop = drawDate(canvas, bounds, lineY);
 
-            String date = format.format(new Date(calendar.getTimeInMillis()));
-            canvas.drawText(date, bounds.centerX(), dateYOffset, datePaint);
+            drawTime(canvas, bounds, dateYTop);
 
+            int tempBaseLine = lineY + textHeightInPx(tempPaint);
+
+            drawTemperature(canvas, bounds, tempBaseLine);
+        }
+
+        private void drawBackground(Canvas canvas, Rect bounds) {
+            if (isInAmbientMode()) {
+                canvas.drawColor(Color.BLACK);
+            } else {
+                canvas.drawRect(0, 0, bounds.width(), bounds.height(), bgPaint);
+            }
+        }
+
+        /**
+         * @return line y
+         */
+        private int drawLine(Canvas canvas, Rect bounds) {
             int xStart = (int) (bounds.centerX() - lineWidth / 2);
             int xEnd = (int) (bounds.centerX() + lineWidth / 2);
-            canvas.drawLine(xStart, lineYOffset, xEnd, lineYOffset, datePaint);
+            int lineY = bounds.centerY() + centerLineOffset;
+            canvas.drawLine(xStart, lineY, xEnd, lineY, datePaint);
+            return lineY;
+        }
 
+        /**
+         * @return date top line y
+         */
+        private int drawDate(Canvas canvas, Rect bounds, int lineY) {
+            int dateY = lineY - defaultMargin;
+
+            String date = format.format(new Date(calendar.getTimeInMillis()));
+            canvas.drawText(date, bounds.centerX(), dateY, datePaint);
+
+            return dateY - textHeightInPx(datePaint);
+        }
+
+        private void drawTime(Canvas canvas, Rect bounds, int dateTopY) {
+            String time = String.format("%d:%02d", calendar.get(Calendar.HOUR), calendar.get(Calendar.MINUTE));
+            canvas.drawText(time, bounds.centerX(), dateTopY, timePaint);
+        }
+
+        private void drawTemperature(Canvas canvas, Rect bounds, int yBaseline) {
             String temp = String.format("%d\u00B0 - %d\u00B0", tempMax, tempMin);
-            canvas.drawText(temp, bounds.centerX(), tempYOffset, tempPaint);
+            canvas.drawText(temp, bounds.centerX(), yBaseline, tempPaint);
+        }
+
+        private int textHeightInPx(Paint paint) {
+            Paint.FontMetricsInt p = paint.getFontMetricsInt();
+            return Math.abs(p.ascent) + Math.abs(p.descent);
+        }
+
+        private void drawDebugBaseLine(Canvas canvas, Rect bounds, int yBaseline) {
+            if (BuildConfig.DEBUG) {
+                canvas.drawLine(0, yBaseline, bounds.right, yBaseline, datePaint);
+            }
         }
 
         /**
