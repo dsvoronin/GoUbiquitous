@@ -26,11 +26,14 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
+import android.nfc.Tag;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 
@@ -113,6 +116,8 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             public void onReceive(Context context, Intent intent) {
                 tempMax = intent.getIntExtra(WearableConstants.KEY_TEMP_MAX, -1);
                 tempMin = intent.getIntExtra(WearableConstants.KEY_TEMP_MIN, -1);
+
+                Log.d("SunshineWatchFace", "Broadcast received: [max=" + tempMax + ";min=" + tempMin + "]");
             }
         };
 
@@ -142,13 +147,18 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
         public void onCreate(SurfaceHolder holder) {
             super.onCreate(holder);
 
+            LocalBroadcastManager.getInstance(SunshineWatchFaceService.this.getBaseContext())
+                    .registerReceiver(weatherUpdateReceiver, new IntentFilter(WearableConstants.WEATHER_UPDATE_ACTION));
+
             setWatchFaceStyle(new WatchFaceStyle.Builder(SunshineWatchFaceService.this)
                     .setCardPeekMode(WatchFaceStyle.PEEK_MODE_VARIABLE)
                     .setBackgroundVisibility(WatchFaceStyle.BACKGROUND_VISIBILITY_INTERRUPTIVE)
                     .setShowSystemUiTime(false)
                     .setAcceptsTapEvents(true)
                     .build());
+
             Resources resources = SunshineWatchFaceService.this.getResources();
+
             mYOffset = resources.getDimension(R.dimen.digital_y_offset);
 
             dateYOffset = resources.getDimension(R.dimen.date_y_offset);
@@ -174,6 +184,7 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
         @Override
         public void onDestroy() {
             mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
+            LocalBroadcastManager.getInstance(SunshineWatchFaceService.this.getBaseContext()).unregisterReceiver(weatherUpdateReceiver);
             super.onDestroy();
         }
 
@@ -212,7 +223,6 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             mRegisteredTimeZoneReceiver = true;
             IntentFilter filter = new IntentFilter(Intent.ACTION_TIMEZONE_CHANGED);
             SunshineWatchFaceService.this.registerReceiver(mTimeZoneReceiver, filter);
-            SunshineWatchFaceService.this.registerReceiver(weatherUpdateReceiver, new IntentFilter(WearableConstants.WEATHER_UPDATE_ACTION));
         }
 
         private void unregisterReceiver() {
@@ -221,7 +231,6 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             }
             mRegisteredTimeZoneReceiver = false;
             SunshineWatchFaceService.this.unregisterReceiver(mTimeZoneReceiver);
-            SunshineWatchFaceService.this.unregisterReceiver(weatherUpdateReceiver);
         }
 
         @Override

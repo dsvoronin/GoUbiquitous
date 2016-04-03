@@ -71,6 +71,8 @@ public class WeatherListenerService extends WearableListenerService
         DataMapItem mapDataItem = DataMapItem.fromDataItem(item);
         DataMap data = mapDataItem.getDataMap();
 
+        Log.i(TAG, "updateWeather: " + data);
+
         broadcastManager.sendBroadcast(
                 new Intent(WEATHER_UPDATE_ACTION)
                         .putExtra(KEY_TEMP_MAX, data.getInt(KEY_TEMP_MAX))
