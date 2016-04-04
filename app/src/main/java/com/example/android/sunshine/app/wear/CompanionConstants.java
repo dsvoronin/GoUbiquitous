@@ -6,4 +6,5 @@ public interface CompanionConstants {
 
     String KEY_MAX_TEMP = "temp-max";
     String KEY_MIN_TEMP = "temp-min";
+    String KEY_IMAGE = "weather-image";
 }

@@ -21,6 +21,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -102,6 +103,8 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
         int tempMax;
         int tempMin;
 
+        Bitmap weatherImage;
+
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -115,6 +118,8 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             public void onReceive(Context context, Intent intent) {
                 tempMax = intent.getIntExtra(WearableConstants.KEY_TEMP_MAX, -1);
                 tempMin = intent.getIntExtra(WearableConstants.KEY_TEMP_MIN, -1);
+
+                weatherImage = intent.getParcelableExtra(WearableConstants.KEY_IMAGE);
 
                 Log.d("SunshineWatchFace", "Broadcast received: [max=" + tempMax + ";min=" + tempMin + "]");
             }
@@ -136,6 +141,8 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
 
         int defaultMargin;
         int centerLineOffset;
+        int iconSize;
+        int tempHorizontalOffset;
 
         DateFormat format = new SimpleDateFormat("EEE, MMM dd yyyy");
 
@@ -169,6 +176,9 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
 
             lineWidth = resources.getDimension(R.dimen.line_width);
             lineYOffset = resources.getDimension(R.dimen.line_y_offset);
+
+            iconSize = (int) resources.getDimension(R.dimen.icon_size);
+            tempHorizontalOffset = (int) resources.getDimension(R.dimen.temp_horizontal_offset);
 
             bgPaint = new Paint();
             bgPaint.setColor(resources.getColor(R.color.background));
@@ -302,7 +312,12 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
 
             int tempBaseLine = lineY + textHeightInPx(tempPaint);
 
-            drawTemperature(canvas, bounds, tempBaseLine);
+            int left = drawTemperature(canvas, bounds, tempBaseLine);
+
+            if (weatherImage != null) {
+                Rect imageBound = new Rect(left - iconSize, lineY, left, lineY + iconSize);
+                canvas.drawBitmap(weatherImage, null, imageBound, null);
+            }
         }
 
         private void drawBackground(Canvas canvas, Rect bounds) {
@@ -341,9 +356,14 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             canvas.drawText(time, bounds.centerX(), dateTopY, timePaint);
         }
 
-        private void drawTemperature(Canvas canvas, Rect bounds, int yBaseline) {
+        /**
+         * @return left X of temp text
+         */
+        private int drawTemperature(Canvas canvas, Rect bounds, int yBaseline) {
             String temp = String.format("%d\u00B0 - %d\u00B0", tempMax, tempMin);
-            canvas.drawText(temp, bounds.centerX(), yBaseline, tempPaint);
+            int x = bounds.centerX() + tempHorizontalOffset;
+            canvas.drawText(temp, x, yBaseline, tempPaint);
+            return x - (int) (tempPaint.measureText(temp) / 2);
         }
 
         private int textHeightInPx(Paint paint) {

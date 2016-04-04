@@ -6,4 +6,5 @@ public interface WearableConstants {
 
     String KEY_TEMP_MAX = "temp-max";
     String KEY_TEMP_MIN = "temp-min";
+    String KEY_IMAGE = "weather-image";
 }
